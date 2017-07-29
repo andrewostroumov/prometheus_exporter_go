@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"time"
-	//"fmt"
+	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -15,60 +15,43 @@ import (
 
 var addr = flag.String("listen-address", ":8080", "The address to listen on for HTTP requests.")
 
-var (
-	gpuTemp0 = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "gpu_temperature",
-			Help: "GPU Temperature",
-			ConstLabels: map[string]string{ "index": "0", "name": "RX470" },
-		},
-	)
+var gpuStats = [2]AMDGPUStats{{ Name: "RX470" }, { Name: "RX480" }}
 
-	gpuTemp1 = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "gpu_temperature",
-			Help: "GPU Temperature",
-			ConstLabels: map[string]string{ "index": "1", "name": "RX480" },
-		},
-	)
-
-	gpuFanSpeed0 = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "gpu_fan_speed",
-			Help: "GPU Fan Speed",
-			ConstLabels: map[string]string{ "index": "0", "name": "RX470" },
-		},
-	)
-
-	gpuFanSpeed1 = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Name: "gpu_fan_speed",
-			Help: "GPU Fan Speed",
-			ConstLabels: map[string]string{ "index": "1", "name": "RX480" },
-		},
-	)
-
-)
-
+var tempMetrics [2]prometheus.Gauge
+var fanSpeedMetrics [2]prometheus.Gauge
 
 func init() {
-	prometheus.MustRegister(gpuTemp0)
-	prometheus.MustRegister(gpuTemp1)
-	prometheus.MustRegister(gpuFanSpeed0)
-	prometheus.MustRegister(gpuFanSpeed1)
+	for index, gpu := range gpuStats {
+		tempMetrics[index] = prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "gpu_temperature",
+				Help: "GPU Temperature",
+				ConstLabels: map[string]string{ "index": string(index), "name": gpu.name },
+			},
+		)
+
+		fanSpeedMetrics[index] = prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "gpu_fan_speed",
+				Help: "GPU Fan Speed",
+				ConstLabels: map[string]string{ "index": string(index), "name": gpu.name },
+			},
+		)
+		prometheus.MustRegister(tempMetrics[index])
+		prometheus.MustRegister(fanSpeedMetrics[index])
+	}
 }
 
 func main() {
 	flag.Parse()
 
-
 	go func() {
 		for {
-			stats := BuildAMDGPUStats()
-			gpuTemp0.Set(stats[0].Temp)
-			gpuTemp1.Set(stats[1].Temp)
-			gpuFanSpeed0.Set(stats[0].FanSpeed)
-			gpuFanSpeed1.Set(stats[1].FanSpeed)
+			UpdateAMDGPUStats()
+			for index, element := range gpuStats {
+				tempMetrics[index].Set(element.Temp)
+				fanSpeedMetrics[index].Set(element.FanSpeed)
+			}
 			time.Sleep(time.Duration(10000) * time.Millisecond)
 		}
 	}()
@@ -78,44 +61,31 @@ func main() {
 }
 
 type AMDGPUStats struct {
+	Index int
+	Name string
 	Temp float64
 	FanSpeed float64
 }
 
-func BuildAMDGPUStats() []AMDGPUStats {
-	tempData0, _ := ioutil.ReadFile("/sys/class/drm/card0/device/hwmon/hwmon0/temp1_input")
-	tempString0 := strings.TrimSpace(string(tempData0))
-	temp0, _ := strconv.ParseFloat(tempString0, 64)
-
-	pwmData0, _ := ioutil.ReadFile("/sys/class/drm/card0/device/hwmon/hwmon0/pwm1")
-	pwmMaxData0, _ := ioutil.ReadFile("/sys/class/drm/card0/device/hwmon/hwmon0/pwm1_max")
-	pwmString0 := strings.TrimSpace(string(pwmData0))
-	pwmMaxString0 := strings.TrimSpace(string(pwmMaxData0))
-	pwm0, _ := strconv.ParseFloat(pwmString0, 64)
-	pwmMax0, _ := strconv.ParseFloat(pwmMaxString0, 64)
-	pwmPercent0 := pwm0 * 100 / pwmMax0
-
-	tempData1, _ := ioutil.ReadFile("/sys/class/drm/card1/device/hwmon/hwmon1/temp1_input")
-	tempString1 := strings.TrimSpace(string(tempData1))
-	temp1, _ := strconv.ParseFloat(tempString1, 64)
-
-	pwmData1, _ := ioutil.ReadFile("/sys/class/drm/card1/device/hwmon/hwmon1/pwm1")
-	pwmMaxData1, _ := ioutil.ReadFile("/sys/class/drm/card1/device/hwmon/hwmon1/pwm1_max")
-	pwmString1 := strings.TrimSpace(string(pwmData1))
-	pwmMaxString1 := strings.TrimSpace(string(pwmMaxData1))
-	pwm1, _ := strconv.ParseFloat(pwmString1, 64)
-	pwmMax1, _ := strconv.ParseFloat(pwmMaxString1, 64)
-	pwmPercent1 := pwm1 * 100 / pwmMax1
-
-
-	return []AMDGPUStats{
-		{
-			Temp: temp0 / 1000,
-			FanSpeed: pwmPercent0,
-		},
-		{
-			Temp: temp1 / 1000,
-			FanSpeed: pwmPercent1,
-		},
+func UpdateAMDGPUStats() {
+	for index, _ := range gpuStats {
+		FillAMDGPUStats(index)
 	}
+}
+
+func FillAMDGPUStats(index int) {
+	tempData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%s/device/hwmon/hwmon%s/temp1_input", index, index))
+	tempString := strings.TrimSpace(string(tempData))
+	temp, _ := strconv.ParseFloat(tempString, 64)
+
+	pwmData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%s/device/hwmon/hwmon%s/pwm1", index, index))
+	pwmMaxData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%s/device/hwmon/hwmon%s/pwm1_max", index, index))
+	pwmString := strings.TrimSpace(string(pwmData))
+	pwmMaxString := strings.TrimSpace(string(pwmMaxData))
+	pwm, _ := strconv.ParseFloat(pwmString, 64)
+	pwmMax, _ := strconv.ParseFloat(pwmMaxString, 64)
+	fanSpeed := pwm * 100 / pwmMax
+
+	gpuStats[index].Temp = temp
+	gpuStats[index].FanSpeed = fanSpeed
 }
