@@ -20,7 +20,7 @@ var (
 		prometheus.GaugeOpts{
 			Name: "gpu_temperature",
 			Help: "GPU Temperature",
-			ConstLabels: map[string]string{ "index": "0", "name": "RX470", "type": "AMD" },
+			ConstLabels: map[string]string{ "index": "0", "name": "RX470" },
 		},
 	)
 
@@ -28,7 +28,7 @@ var (
 		prometheus.GaugeOpts{
 			Name: "gpu_temperature",
 			Help: "GPU Temperature",
-			ConstLabels: map[string]string{ "index": "1", "name": "RX480", "type": "AMD" },
+			ConstLabels: map[string]string{ "index": "1", "name": "RX480" },
 		},
 	)
 
@@ -36,7 +36,7 @@ var (
 		prometheus.GaugeOpts{
 			Name: "gpu_fan_speed",
 			Help: "GPU Fan Speed",
-			ConstLabels: map[string]string{ "index": "0", "name": "RX470", "type": "AMD" },
+			ConstLabels: map[string]string{ "index": "0", "name": "RX470" },
 		},
 	)
 
@@ -44,7 +44,7 @@ var (
 		prometheus.GaugeOpts{
 			Name: "gpu_fan_speed",
 			Help: "GPU Fan Speed",
-			ConstLabels: map[string]string{ "index": "1", "name": "RX480", "type": "AMD" },
+			ConstLabels: map[string]string{ "index": "1", "name": "RX480" },
 		},
 	)
 
