@@ -26,7 +26,7 @@ func init() {
 			prometheus.GaugeOpts{
 				Name: "gpu_temperature",
 				Help: "GPU Temperature",
-				ConstLabels: map[string]string{ "index": string(index), "name": gpu.name },
+				ConstLabels: map[string]string{ "index": string(index), "name": gpu.Name },
 			},
 		)
 
@@ -34,7 +34,7 @@ func init() {
 			prometheus.GaugeOpts{
 				Name: "gpu_fan_speed",
 				Help: "GPU Fan Speed",
-				ConstLabels: map[string]string{ "index": string(index), "name": gpu.name },
+				ConstLabels: map[string]string{ "index": string(index), "name": gpu.Name },
 			},
 		)
 		prometheus.MustRegister(tempMetrics[index])
