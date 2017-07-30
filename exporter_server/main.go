@@ -67,18 +67,18 @@ type AMDGPUStats struct {
 }
 
 func UpdateAMDGPUStats() {
-	for index, _ := range gpuStats {
+	for index := range gpuStats {
 		FillAMDGPUStats(index)
 	}
 }
 
 func FillAMDGPUStats(index int) {
-	tempData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%s/device/hwmon/hwmon%s/temp1_input", index, index))
+	tempData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%v/device/hwmon/hwmon%v/temp1_input", index, index))
 	tempString := strings.TrimSpace(string(tempData))
 	temp, _ := strconv.ParseFloat(tempString, 64)
 
-	pwmData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%s/device/hwmon/hwmon%s/pwm1", index, index))
-	pwmMaxData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%s/device/hwmon/hwmon%s/pwm1_max", index, index))
+	pwmData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%v/device/hwmon/hwmon%v/pwm1", index, index))
+	pwmMaxData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%v/device/hwmon/hwmon%v/pwm1_max", index, index))
 	pwmString := strings.TrimSpace(string(pwmData))
 	pwmMaxString := strings.TrimSpace(string(pwmMaxData))
 	pwm, _ := strconv.ParseFloat(pwmString, 64)
