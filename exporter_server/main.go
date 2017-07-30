@@ -76,6 +76,7 @@ func FillAMDGPUStats(index int) {
 	tempData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%v/device/hwmon/hwmon%v/temp1_input", index, index))
 	tempString := strings.TrimSpace(string(tempData))
 	temp, _ := strconv.ParseFloat(tempString, 64)
+	temp = temp / 1000
 
 	pwmData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%v/device/hwmon/hwmon%v/pwm1", index, index))
 	pwmMaxData, _ := ioutil.ReadFile(fmt.Sprintf("/sys/class/drm/card%v/device/hwmon/hwmon%v/pwm1_max", index, index))
